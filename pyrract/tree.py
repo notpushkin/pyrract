@@ -1,6 +1,8 @@
 # flake8: noqa
 
-from .util import flatten, iif
+import toga
+
+from .util import flatten
 
 
 class Node:
@@ -8,7 +10,7 @@ class Node:
 
     def __init__(self, children=None, **props):
         self.props = props
-        self.props["children"] = []
+        self._children = []
         if children is not None:
             self.children = children
 
@@ -18,11 +20,11 @@ class Node:
 
     @property
     def children(self):
-        return self.props["children"]
+        return self._children
 
     @children.setter
     def children(self, children):
-        self.props["children"] = list(self.normalize(children))
+        self._children = list(self.normalize(children))
 
     @staticmethod
     def normalize(node_or_nodes):
@@ -33,7 +35,7 @@ class Node:
 
     def __getitem__(self, children):
         """
-        DST for adding children. Duh.
+        DSL for adding children. Duh.
         """
         self.children = children
         return self
@@ -81,3 +83,37 @@ class NodeFactory:
 
 
 dom = NodeFactory()
+
+
+class TogaNode(Node):
+    toga_component = None
+
+    def build(self):
+        self.base = self.toga_component(**self.props)
+
+        for child in self.children:
+            self.base.add(child.build())
+
+        return self.base
+
+
+class TogaApp(TogaNode):
+    toga_component = toga.App
+
+    def build(self):
+        if len(self.children) != 1:
+            raise ValueError("TogaApp should have exactly 1 child")
+
+        self.base = self.toga_component(
+            startup=lambda app: self.children[0].build(),
+            **self.props)
+
+        return self.base
+
+
+class TogaBox(TogaNode):
+    toga_component = toga.Box
+
+
+class TogaButton(TogaNode):
+    toga_component = toga.Button
