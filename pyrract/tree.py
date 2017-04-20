@@ -1,7 +1,3 @@
-# flake8: noqa
-
-import toga
-
 from .util import flatten
 
 
@@ -45,8 +41,8 @@ class Node:
             if isinstance(node, Node):
                 name = getattr(node, "name", node.__class__.__name__)
                 props = ", ".join(("%s=%r" % (k, v)
-                                    for k, v in node.props.items()
-                                    if k != "children"))
+                                   for k, v in node.props.items()
+                                   if k != "children"))
                 if len(node.children) == 0:
                     yield "%s(%s) []," % (name, props)
                 else:
@@ -68,52 +64,15 @@ class Component(Node):
         pass
 
 
-class NodeFactory:
-    """
-    Generates nodes with a given name by using attribute syntax sugar.
-    """
 
-    def __init__(self, node_class=Node):
-        self.node_class = node_class
-
-    def __getattribute__(self, the_name):
-        class _generated(self.node_class):
-            name = the_name
-        return _generated
-
-
-dom = NodeFactory()
-
-
-class TogaNode(Node):
-    toga_component = None
-
-    def build(self):
-        self.base = self.toga_component(**self.props)
-
-        for child in self.children:
-            self.base.add(child.build())
-
-        return self.base
-
-
-class TogaApp(TogaNode):
-    toga_component = toga.App
-
-    def build(self):
-        if len(self.children) != 1:
-            raise ValueError("TogaApp should have exactly 1 child")
-
-        self.base = self.toga_component(
-            startup=lambda app: self.children[0].build(),
-            **self.props)
-
-        return self.base
-
-
-class TogaBox(TogaNode):
-    toga_component = toga.Box
-
-
-class TogaButton(TogaNode):
-    toga_component = toga.Button
+def render_tree(node):
+    if not isinstance(node, Node):
+        yield node
+    elif node._is_final:
+        new_node = node.copy()
+        new_node.children = [render_tree(child) for child in node.children]
+        yield new_node
+    else:
+        rendered = Node.normalize(node.render())
+        for rnode in rendered:
+            yield from render_tree(rnode)

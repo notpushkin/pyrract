@@ -1,4 +1,4 @@
-from .tree import Component, TogaApp, TogaBox, TogaButton
+from .toga import Component, TogaApp, TogaBox, TogaButton
 
 try:
     from gi.repository import Gtk
