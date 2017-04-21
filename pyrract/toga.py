@@ -1,11 +1,18 @@
 import toga
-from .tree import Node
+from .tree import Element
 
 
-class TogaNode(Node):
+class TogaElement(Element):
     toga_component = None
 
-    def build(self):
+    def destroy(self):
+        print("Not available :V")
+
+    def set_props(self, next_props):
+        for name, value in next_props.items():
+            setattr(self.base, name, value)
+
+    def build(self, parent=None):
         self.base = self.toga_component(**self.props)
 
         for child in self.children:
@@ -14,23 +21,9 @@ class TogaNode(Node):
         return self.base
 
 
-class TogaApp(TogaNode):
-    toga_component = toga.App
-
-    def build(self):
-        if len(self.children) != 1:
-            raise ValueError("TogaApp should have exactly 1 child")
-
-        self.base = self.toga_component(
-            startup=lambda app: self.children[0].build(),
-            **self.props)
-
-        return self.base
-
-
-class TogaBox(TogaNode):
+class TogaBox(TogaElement):
     toga_component = toga.Box
 
 
-class TogaButton(TogaNode):
+class TogaButton(TogaElement):
     toga_component = toga.Button
